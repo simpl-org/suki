@@ -1,0 +1,6 @@
+/target
+**/*.rs.bk
+*.png
+*.jpg
+*.suki
+!example.suki

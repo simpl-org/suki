@@ -1,6 +1,7 @@
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
-use std::io::Read;
+
+mod suki;
 
 fn main() -> Result<(), String> {
     let args: Vec<String> = std::env::args().collect();
@@ -42,28 +43,10 @@ fn main() -> Result<(), String> {
 fn tag(filename: &str, tags: &[String]) -> Result<(), String> {
     let dir = curr_dir();
     println!("file: {}, tags: {:?}", filename, tags);
-    let mut file = match open_suki(&dir) {
-        Ok(f) => f,
-        Err(e) => panic!(e)
-    };
 
-    let mut buf = String::new();
-    file.read_to_string(&mut buf);
-    let mut label_list: Vec<&str> = vec!();
-    let mut line_no = 0;
-    for l in buf.split_terminator('\n') {
-        line_no += 1;
-        if l.starts_with('\t') {
-            continue;
-        }
-        if l.ends_with(':') {
-            label_list.push(l)
-        } else {
-            return Err(format!("bad syntax at line {} - missing ':' at end of label descriptor", line_no))
-        }
-    }
-    println!("{:?}", label_list);
+    let file = suki::SukiFile::new(&dir);
 
+    println!("{:?}", file);
     Ok(())
 }
 
@@ -81,22 +64,6 @@ fn print_help() {
     println!("\t<v | version>                            displays version");
     println!("flags:");
     println!("\t-r                                       recursive search");
-}
-
-fn suki_path(path: &str) -> String {
-    let mut path = String::from(path);
-    path.push_str("/.suki");
-
-    path
-}
-
-fn open_suki(path: &str) -> std::io::Result<std::fs::File>{
-    let path = suki_path(path);
-    std::fs::OpenOptions::new()
-        .read(true)
-        .append(true)
-        .create(true)
-        .open(std::path::Path::new(&path))
 }
 
 fn bin_name() -> String {

@@ -1,6 +1,5 @@
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
-
 mod suki;
 
 fn main() -> Result<(), String> {
@@ -44,10 +43,14 @@ fn tag(filename: &str, tags: &[String]) -> Result<(), String> {
     let dir = curr_dir();
     println!("file: {}, tags: {:?}", filename, tags);
 
-    let file = suki::SukiFile::new(&dir);
+    let file = suki::SukiFile::new(&dir)?;
 
     println!("{:?}", file);
-    Ok(())
+
+
+    file.serialize("contrib")
+
+    //Ok(())
 }
 
 fn print_version() {

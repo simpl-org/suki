@@ -1,5 +1,5 @@
 use std::error::Error;
-use std::io::Read;
+use std::io::{Read, Write};
 
 /// SukiTags represent the tag -> filename collections that are contained by
 /// SukiFiles.
@@ -17,6 +17,29 @@ pub struct SukiFile {
 }
 
 impl SukiFile {
+    pub fn serialize(self, path: &str) -> Result<(), String> {
+        let mut file = match open_and_clear_suki(path) {
+            Ok(f) => f,
+            Err(e) => return Err(String::from(e.description())) 
+        };
+
+        for tag in self.tags {
+            match write!(file, "{}:\n", tag.tag) {
+                Ok(_) => (),
+                Err(e) => return Err(String::from(e.description()))
+            };
+
+            for f in tag.files {
+                match write!(file, "\t{}\n", f) {
+                    Ok(_) => (),
+                    Err(e) => return Err(String::from(e.description()))
+                }; 
+            }
+        }
+
+        Ok(())
+    }
+
     pub fn new(path: &str) -> Result<SukiFile, String> {
 
         let mut file_buffer = SukiFile { tags: Vec::new() };
@@ -61,7 +84,8 @@ impl SukiFile {
                 // Set up the brand new tag with its label, and an empty vector
                 // for its filenames.
                 tag_buffer = Some(SukiTag {
-                    tag: String::from(l),
+                    // Right here we cut off the colon at the end of the line.
+                    tag: String::from(&l[..l.len()-1]),
                     files: Vec::new(),
                 });
                 continue;
@@ -93,6 +117,16 @@ fn open_suki(path: &str) -> std::io::Result<std::fs::File> {
     std::fs::OpenOptions::new()
         .read(true)
         .append(true)
+        .create(true)
+        .open(std::path::Path::new(&path))
+}
+
+fn open_and_clear_suki(path: &str) -> std::io::Result<std::fs::File> {
+    let path = suki_path(path);
+    std::fs::OpenOptions::new()
+        .read(true)
+        .write(true)
+        .truncate(true)
         .create(true)
         .open(std::path::Path::new(&path))
 }

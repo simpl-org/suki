@@ -9,32 +9,33 @@ fn main() -> Result<(), String> {
         return Ok(());
     }
 
-    let a = match args.get(1) {
+    let cmd = match args.get(1) {
         Some(s) => String::from(s),
         None => panic!("args but no args? sanity check failed"),
     };
 
-    match a.as_ref() {
-        "t" | "tag" => {
+    match cmd.as_ref() {
+        "t" | "tag" => 
+            // Match the filename argument in an attempt to see if we've been
+            // given a valid tag command.
             match args.get(2) {
-                Some(s) => return tag(s, args.split_at(3).1),
-                None => return Err(String::from("no filename supplied to tag")),
-            };
-        }
-        "r" | "remove" => println!("remove"),
-        "s" | "search" => println!("search"),
+                Some(s) => tag(s, args.split_at(3).1),
+                None => Err(String::from("no filename supplied to tag")),
+            }
+        
+        "r" | "remove" => Err(format!("unimplemented cmd - remove")),
+        "s" | "search" => Err(format!("unimplemented cmd - search")),
         "h" | "help" => {
             print_help();
-            return Ok(());
+            Ok(())
         }
         "v" | "version" => {
             print_version();
-            return Ok(());
+            Ok(())
         }
-        _ => println!("bad"),
-    };
+        s => Err(format!("unknown command {}", s))
+    }
 
-    Ok(())
 }
 
 fn tag(filename: &str, tags: &[String]) -> Result<(), String> {

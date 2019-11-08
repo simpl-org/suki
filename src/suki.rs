@@ -5,22 +5,31 @@ use std::io::{Read, Write};
 /// SukiFiles.
 #[derive(std::fmt::Debug)]
 pub struct SukiTag {
-    tag: String,
-    files: Vec<String>,
+    pub tag: String,
+    pub files: Vec<String>,
 }
 
 /// SukiFiles are the primary operative component of suki, encapsulating all of
 /// the tag -> filename relationships that `.suki` files encode for.
 #[derive(std::fmt::Debug)]
 pub struct SukiFile {
-    tags: Vec<SukiTag>,
+    pub tags: Vec<SukiTag>,
+}
+
+impl SukiTag {
+    pub fn new(tag: &str) -> SukiTag {
+        SukiTag {
+            tag: String::from(tag),
+            files: Vec::new(),
+        }
+    }
 }
 
 impl SukiFile {
     pub fn serialize(self, path: &str) -> Result<(), String> {
         let mut file = match open_and_clear_suki(path) {
             Ok(f) => f,
-            Err(e) => return Err(String::from(e.description())) 
+            Err(e) => return Err(String::from(e.description())),
         };
 
         let mut buf = String::new();
@@ -31,18 +40,17 @@ impl SukiFile {
             for f in tag.files {
                 buf.push_str(&format!("\t{}\n", f))
             }
-            
         }
+
         match file.write_all(buf.as_bytes()) {
             Ok(_) => (),
-            Err(e) => return Err(String::from(e.description()))
-        }; 
+            Err(e) => return Err(String::from(e.description())),
+        };
 
         Ok(())
     }
 
     pub fn new(path: &str) -> Result<SukiFile, String> {
-
         let mut file_buffer = SukiFile { tags: Vec::new() };
 
         let mut txt_file = match open_suki(path) {
@@ -65,7 +73,9 @@ impl SukiFile {
             if l.starts_with('\t') {
                 match tag_buffer.as_mut() {
                     Some(s) => s.files.push(String::from(&l[1..])),
-                    None => return Err(format!("bad syntax - cannot start suki file with filename")),
+                    None => {
+                        return Err(format!("bad syntax - cannot start suki file with filename"))
+                    }
                 }
                 continue;
             }
@@ -84,20 +94,18 @@ impl SukiFile {
                 }
                 // Set up the brand new tag with its label, and an empty vector
                 // for its filenames.
-                tag_buffer = Some(SukiTag {
+                tag_buffer = Some(SukiTag::new(
                     // Right here we cut off the colon at the end of the line.
-                    tag: String::from(&l[..l.len()-1]),
-                    files: Vec::new(),
-                });
+                    &l[..l.len() - 1],
+                ));
                 continue;
-            } 
+            }
 
             // TODO: This is arbitrary. Pending removal/change of message?
             return Err(format!(
                 "bad syntax at line {} - missing ':' at end of label descriptor",
                 line_no
             ));
-            
         }
 
         // At worse, we should have at least one tag left over that didn't get
@@ -110,7 +118,7 @@ impl SukiFile {
 }
 
 /// Opens a `.suki` file lying at the root of the given path.
-/// 
+///
 /// Returns: an `std::io::Result` containing a handle to the file, or an I/O
 /// error if something goes wrong.
 fn open_suki(path: &str) -> std::io::Result<std::fs::File> {
@@ -134,7 +142,7 @@ fn open_and_clear_suki(path: &str) -> std::io::Result<std::fs::File> {
 
 /// A convienince function for divining the actual literal path of a suki file
 /// in a directory.
-/// 
+///
 /// Returns: a `String` containing the path argument with `/.suki` appended.
 fn suki_path(path: &str) -> String {
     let mut path = String::from(path);

@@ -23,19 +23,20 @@ impl SukiFile {
             Err(e) => return Err(String::from(e.description())) 
         };
 
+        let mut buf = String::new();
+
         for tag in self.tags {
-            match write!(file, "{}:\n", tag.tag) {
-                Ok(_) => (),
-                Err(e) => return Err(String::from(e.description()))
-            };
+            buf.push_str(&format!("{}:\n", tag.tag));
 
             for f in tag.files {
-                match write!(file, "\t{}\n", f) {
-                    Ok(_) => (),
-                    Err(e) => return Err(String::from(e.description()))
-                }; 
+                buf.push_str(&format!("\t{}\n", f))
             }
+            
         }
+        match file.write_all(buf.as_bytes()) {
+            Ok(_) => (),
+            Err(e) => return Err(String::from(e.description()))
+        }; 
 
         Ok(())
     }

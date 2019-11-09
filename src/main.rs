@@ -23,7 +23,10 @@ fn main() -> Result<(), String> {
                 None => Err(String::from("no filename supplied to tag")),
             }
         
-        "r" | "remove" => Err(format!("unimplemented cmd - remove")),
+        "r" | "remove" => match args.get(2) {
+            Some(s) => remove(s, args.split_at(3).1),
+            None => Err(String::from("no filename supplied to remove")),
+        }
         "s" | "search" => Err(format!("unimplemented cmd - search")),
         "h" | "help" => {
             print_help();
@@ -59,6 +62,26 @@ fn tag(filename: &str, tags: &[String]) -> Result<(), String> {
                 new_tag.files.push(String::from(filename));
                 file.tags.push(new_tag);
             }
+        }
+    }
+
+    file.serialize("contrib")
+}
+
+fn remove(filename: &str, tags: &[String]) -> Result<(), String> {
+    let dir = curr_dir();
+    println!("file: {}, tags: {:?}", filename, tags);
+
+    let mut file = suki::SukiFile::new(&dir)?;
+
+    if !tags.is_empty() {
+        for t in tags {
+            for st in &mut file.tags {
+                if t.eq(&st.tag) {
+                    st.files.retain(|f| !f.eq(filename));
+                    break;
+                }
+            } 
         }
     }
 

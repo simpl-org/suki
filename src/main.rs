@@ -1,4 +1,6 @@
-const VERSION: &'static str = env!("CARGO_PKG_VERSION");
+#![warn(clippy::pedantic)]
+
+const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 mod suki;
 
@@ -46,7 +48,7 @@ fn main() -> Result<(), String> {
     match cmd.as_ref() {
         "t" | "tag" => tag(&filename, args.split_at(current_arg).1, &flags),
         "r" | "remove" => remove(&filename, args.split_at(current_arg).1, &flags),
-        "s" | "search" => Err(format!("unimplemented cmd - search")),
+        "s" | "search" => Err(String::from("unimplemented cmd - search")),
         "h" | "help" => {
             print_help();
             Ok(())
@@ -67,7 +69,7 @@ fn tag(filename: &str, tags: &[String], flags: &[Flags]) -> Result<(), String> {
         eprintln!("file: {}, tags: {:?}", filename, tags);
     }
 
-    let mut file = suki::SukiFile::new(&dir)?;
+    let mut file = suki::File::new(&dir)?;
 
     if !tags.is_empty() {
         for t in tags {
@@ -80,7 +82,7 @@ fn tag(filename: &str, tags: &[String], flags: &[Flags]) -> Result<(), String> {
                 }
             } 
             if !found {
-                let mut new_tag = suki::SukiTag::new(t);
+                let mut new_tag = suki::Tag::new(t);
                 new_tag.files.push(String::from(filename));
                 file.tags.push(new_tag);
             }
@@ -95,7 +97,7 @@ fn remove(filename: &str, tags: &[String], flags: &[Flags]) -> Result<(), String
     if flags.contains(&Flags::Debug) {
         println!("file: {}, tags: {:?}", filename, tags);
     }
-    let mut file = suki::SukiFile::new(&dir)?;
+    let mut file = suki::File::new(&dir)?;
 
     if !tags.is_empty() {
         for t in tags {

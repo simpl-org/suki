@@ -3,6 +3,13 @@ name = "suki"
 version = "0.1.0"
 authors = ["CalmBit <EB5473@gmail.com>"]
 edition = "2018"
+description = "suki - the simple unique krap itemizer"
+license = "MIT"
+license_file = "LICENSE"
+repository = "https://git.sr.ht/~calmbit/suki"
+readme = "README.md"
+keywords = ["tagging", "files"]
+categories = ["tools"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

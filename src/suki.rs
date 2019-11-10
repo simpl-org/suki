@@ -1,31 +1,31 @@
 use std::error::Error;
 use std::io::{Read, Write};
 
-/// SukiTags represent the tag -> filename collections that are contained by
-/// SukiFiles.
+/// `Tags` represent the tag -> filename collections that are contained by
+/// `Files`.
 #[derive(std::fmt::Debug)]
-pub struct SukiTag {
+pub struct Tag {
     pub tag: String,
     pub files: Vec<String>,
 }
 
-/// SukiFiles are the primary operative component of suki, encapsulating all of
+/// `Files` are the primary operative component of suki, encapsulating all of
 /// the tag -> filename relationships that `.suki` files encode for.
 #[derive(std::fmt::Debug)]
-pub struct SukiFile {
-    pub tags: Vec<SukiTag>,
+pub struct File {
+    pub tags: Vec<Tag>,
 }
 
-impl SukiTag {
-    pub fn new(tag: &str) -> SukiTag {
-        SukiTag {
+impl Tag {
+    pub fn new(tag: &str) -> Self {
+        Self {
             tag: String::from(tag),
             files: Vec::new(),
         }
     }
 }
 
-impl SukiFile {
+impl File {
     pub fn serialize(self, path: &str) -> Result<(), String> {
         let mut file = match open_and_clear_suki(path) {
             Ok(f) => f,
@@ -50,8 +50,8 @@ impl SukiFile {
         Ok(())
     }
 
-    pub fn new(path: &str) -> Result<SukiFile, String> {
-        let mut file_buffer = SukiFile { tags: Vec::new() };
+    pub fn new(path: &str) -> Result<Self, String> {
+        let mut file_buffer = Self { tags: Vec::new() };
 
         let mut txt_file = match open_suki(path) {
             Ok(f) => f,
@@ -64,17 +64,15 @@ impl SukiFile {
             Err(e) => return Err(String::from(e.description())),
         }
 
-        let mut line_no = 0;
-        let mut tag_buffer: Option<SukiTag> = Option::None;
-        for l in buf.split_terminator('\n') {
-            line_no += 1;
+        let mut tag_buffer: Option<Tag> = Option::None;
+        for (line_no, l) in buf.split_terminator('\n').enumerate() {
             // Filenames are delimited with '\t', the tab character. This is
             // the primary trait that enforces a hierarchy of tags 1..* files.
             if l.starts_with('\t') {
                 match tag_buffer.as_mut() {
                     Some(s) => s.files.push(String::from(&l[1..])),
                     None => {
-                        return Err(format!("bad syntax - cannot start suki file with filename"))
+                        return Err(String::from("bad syntax - cannot start suki file with filename"))
                     }
                 }
                 continue;
@@ -88,13 +86,12 @@ impl SukiFile {
             if l.ends_with(':') {
                 // If we've already got a compiled tag on our plate, push it to
                 // the file and make room for the new tag.
-                match tag_buffer {
-                    Some(s) => file_buffer.tags.push(s),
-                    None => (),
+                if let Some(s) = tag_buffer {
+                    file_buffer.tags.push(s)
                 }
                 // Set up the brand new tag with its label, and an empty vector
                 // for its filenames.
-                tag_buffer = Some(SukiTag::new(
+                tag_buffer = Some(Tag::new(
                     // Right here we cut off the colon at the end of the line.
                     &l[..l.len() - 1],
                 ));
@@ -104,7 +101,7 @@ impl SukiFile {
             // TODO: This is arbitrary. Pending removal/change of message?
             return Err(format!(
                 "bad syntax at line {} - missing ':' at end of label descriptor",
-                line_no
+                line_no+1
             ));
         }
 

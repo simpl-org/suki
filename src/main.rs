@@ -2,6 +2,12 @@ const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
 mod suki;
 
+#[derive(PartialEq)]
+enum Flags {
+    Debug,
+    Recursive
+}
+
 fn main() -> Result<(), String> {
     let args: Vec<String> = std::env::args().collect();
     if args.is_empty() {
@@ -14,19 +20,32 @@ fn main() -> Result<(), String> {
         None => panic!("args but no args? sanity check failed"),
     };
 
-    match cmd.as_ref() {
-        "t" | "tag" => 
-            // Match the filename argument in an attempt to see if we've been
-            // given a valid tag command.
-            match args.get(2) {
-                Some(s) => tag(s, args.split_at(3).1),
-                None => Err(String::from("no filename supplied to tag")),
+    let mut flags: Vec<Flags> = Vec::new();
+
+    let mut current_arg = 2;
+    let filename: String; 
+    loop {
+        match args.get(current_arg) {
+            Some(s) => {
+                current_arg += 1;
+                if s.starts_with('-') {
+                    flags.push(match s.as_ref() {
+                        "--debug" | "-d" => Flags::Debug,
+                        "--recursive" | "-r" => Flags::Recursive,
+                        a => return Err(format!("invalid flag {}", a))
+                    });
+                   continue;
+                } 
+                filename = s.to_string();
+                break;
             }
-        
-        "r" | "remove" => match args.get(2) {
-            Some(s) => remove(s, args.split_at(3).1),
-            None => Err(String::from("no filename supplied to remove")),
+            None => return Err(String::from("no filename supplied to tag"))
         }
+    }
+
+    match cmd.as_ref() {
+        "t" | "tag" => tag(&filename, args.split_at(current_arg).1, &flags),
+        "r" | "remove" => remove(&filename, args.split_at(current_arg).1, &flags),
         "s" | "search" => Err(format!("unimplemented cmd - search")),
         "h" | "help" => {
             print_help();
@@ -41,9 +60,12 @@ fn main() -> Result<(), String> {
 
 }
 
-fn tag(filename: &str, tags: &[String]) -> Result<(), String> {
+fn tag(filename: &str, tags: &[String], flags: &[Flags]) -> Result<(), String> {
     let dir = curr_dir();
-    println!("file: {}, tags: {:?}", filename, tags);
+    
+    if flags.contains(&Flags::Debug) {
+        eprintln!("file: {}, tags: {:?}", filename, tags);
+    }
 
     let mut file = suki::SukiFile::new(&dir)?;
 
@@ -68,10 +90,11 @@ fn tag(filename: &str, tags: &[String]) -> Result<(), String> {
     file.serialize("contrib")
 }
 
-fn remove(filename: &str, tags: &[String]) -> Result<(), String> {
+fn remove(filename: &str, tags: &[String], flags: &[Flags]) -> Result<(), String> {
     let dir = curr_dir();
-    println!("file: {}, tags: {:?}", filename, tags);
-
+    if flags.contains(&Flags::Debug) {
+        println!("file: {}, tags: {:?}", filename, tags);
+    }
     let mut file = suki::SukiFile::new(&dir)?;
 
     if !tags.is_empty() {
@@ -89,7 +112,7 @@ fn remove(filename: &str, tags: &[String]) -> Result<(), String> {
 }
 
 fn print_version() {
-    println!(
+    eprintln!(
         "{} version {} - the simple unique krap itemizer",
         bin_name(),
         VERSION
@@ -98,16 +121,16 @@ fn print_version() {
 
 fn print_help() {
     print_version();
-    println!("commands:");
-    println!("\t<t | tag> [flags] <filename> [tags]      adds file to the specified tags");
-    println!(
+    eprintln!("commands:");
+    eprintln!("\t<t | tag> [flags] <filename> [tags]      adds file to the specified tags");
+    eprintln!(
         "\t<r | remove> [flags] <filename> [tags]   removes the tag(s) from the file specified"
     );
-    println!("\t<s | search> [flags] [tags]              searches the tag database for files with the corresponding tag(s)");
-    println!("\t<h | help>                               displays this help");
-    println!("\t<v | version>                            displays version");
-    println!("flags:");
-    println!("\t-r                                       recursive search");
+    eprintln!("\t<s | search> [flags] [tags]              searches the tag database for files with the corresponding tag(s)");
+    eprintln!("\t<h | help>                               displays this help");
+    eprintln!("\t<v | version>                            displays version");
+    eprintln!("flags:");
+    eprintln!("\t-r                                       recursive search");
 }
 
 fn bin_name() -> String {

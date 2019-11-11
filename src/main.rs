@@ -27,21 +27,21 @@ fn main() -> Result<(), String> {
     let mut current_arg = 2;
     let filename: String;
     loop {
-        match args.get(current_arg) {
-            Some(s) => {
-                current_arg += 1;
-                if s.starts_with('-') {
-                    flags.push(match s.as_ref() {
-                        "--debug" | "-d" => Flags::Debug,
-                        "--recursive" | "-r" => Flags::Recursive,
-                        a => return Err(format!("invalid flag {}", a)),
-                    });
-                    continue;
-                }
-                filename = s.to_string();
-                break;
+        if let Some(s) = args.get(current_arg) {
+            current_arg += 1;
+            if s.starts_with('-') {
+                flags.push(match s.as_ref() {
+                    "--debug" | "-d" => Flags::Debug,
+                    "--recursive" | "-r" => Flags::Recursive,
+                    a => return Err(format!("invalid flag {}", a)),
+                });
+                continue;
             }
-            None => return Err(String::from("no filename supplied to tag")),
+            filename = s.to_string();
+            break;
+        } else {
+            filename = String::new();
+            break;
         }
     }
 
@@ -63,8 +63,13 @@ fn main() -> Result<(), String> {
 
 fn tag(filename: &str, tags: &[String], flags: &[Flags]) -> Result<(), String> {
     let dir = curr_dir();
+
     if flags.contains(&Flags::Debug) {
         eprintln!("file: {}, tags: {:?}", filename, tags);
+    }
+
+    if filename.is_empty() {
+        return Err(String::from("no filename passed to tag"));
     }
 
     let mut file = suki::File::new(&dir)?;
@@ -92,9 +97,15 @@ fn tag(filename: &str, tags: &[String], flags: &[Flags]) -> Result<(), String> {
 
 fn remove(filename: &str, tags: &[String], flags: &[Flags]) -> Result<(), String> {
     let dir = curr_dir();
+
     if flags.contains(&Flags::Debug) {
         eprintln!("file: {}, tags: {:?}", filename, tags);
     }
+
+    if filename.is_empty() {
+        return Err(String::from("no filename passed to tag"));
+    }
+
     let mut file = suki::File::new(&dir)?;
 
     if !tags.is_empty() {
@@ -113,9 +124,11 @@ fn remove(filename: &str, tags: &[String], flags: &[Flags]) -> Result<(), String
 
 fn search(tags: &[String], flags: &[Flags]) -> Result<(), String> {
     let dir = curr_dir();
+
     if flags.contains(&Flags::Debug) {
         eprintln!("tags: {:?}", tags);
     }
+
     let mut file = suki::File::new(&dir)?;
 
     let mut working_set: Option<Vec<String>> = None;

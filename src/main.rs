@@ -92,7 +92,7 @@ fn tag(filename: &str, tags: &[String], flags: &[Flags]) -> Result<(), String> {
         }
     }
 
-    file.serialize("contrib")
+    file.serialize(&dir)
 }
 
 fn remove(filename: &str, tags: &[String], flags: &[Flags]) -> Result<(), String> {
@@ -119,7 +119,7 @@ fn remove(filename: &str, tags: &[String], flags: &[Flags]) -> Result<(), String
         }
     }
 
-    file.serialize("contrib")
+    file.serialize(&dir)
 }
 
 fn search(tags: &[String], flags: &[Flags]) -> Result<(), String> {

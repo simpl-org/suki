@@ -137,26 +137,34 @@ fn search(tags: &[String], flags: &[Flags]) -> Result<(), String> {
         if flags.contains(&Flags::Debug) {
             eprintln!("scanning for {}", t);
         }
+
         let mut found = false;
+
         for st in &mut file.tags {
             found = false;
             if t.eq(&st.tag) {
                 found = true;
-                if working_set.is_none() {
+                if let Some(mut ws) = working_set {
+                    // Retain only the entries that match the tag we're looking
+                    // for. If they don't, they don't share a tag with our
+                    // working set.
+                    ws.retain(|f| st.files.iter().any(|tf| tf.eq(f)));
+                    working_set = Some(ws);
+                } else {
+                    // We don't have a working set - we'll set it up with the
+                    // entire file domain of our first tag, for starters.
                     let mut ws = Vec::new();
                     for f in &st.files {
                         ws.push(String::from(f));
                     }
-                    working_set = Some(ws);
-                } else {
-                    let mut ws = working_set.unwrap();
-                    ws.retain(|f| st.files.iter().any(|tf| tf.eq(f)));
                     working_set = Some(ws);
                 }
                 break;
             }
         }
         if !found {
+            // If we couldn't find the tag in our file, then...nothing will
+            // ever match it! So, we'll assume it's just...gone.
             working_set = None;
             break;
         }
@@ -167,11 +175,10 @@ fn search(tags: &[String], flags: &[Flags]) -> Result<(), String> {
             print!("{} ", f);
         }
         println!();
-        Ok(())
     } else {
         eprintln!("nothing found");
-        Ok(())
     }
+    Ok(())
 }
 
 fn print_version() {

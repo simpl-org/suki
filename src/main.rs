@@ -12,7 +12,7 @@ enum Flags {
 
 fn main() -> Result<(), String> {
     let args: Vec<String> = std::env::args().collect();
-    if args.is_empty() {
+    if args.len() < 2 {
         print_help();
         return Ok(());
     }
@@ -192,15 +192,15 @@ fn print_version() {
 fn print_help() {
     print_version();
     eprintln!("commands:");
-    eprintln!("\t<t | tag> [flags] <filename> [tags]      adds file to the specified tags");
+    eprintln!("  <t | tag> [flags] <filename> [tags]      adds file to the specified tags");
     eprintln!(
-        "\t<r | remove> [flags] <filename> [tags]   removes the tag(s) from the file specified"
+        "  <r | remove> [flags] <filename> [tags]   removes the tag(s) from the file specified"
     );
-    eprintln!("\t<s | search> [flags] [tags]              searches the tag database for files with the corresponding tag(s)");
-    eprintln!("\t<h | help>                               displays this help");
-    eprintln!("\t<v | version>                            displays version");
+    eprintln!("  <s | search> [flags] [tags]              searches the tag database for files with the corresponding tag(s)");
+    eprintln!("  <h | help>                               displays this help");
+    eprintln!("  <v | version>                            displays version");
     eprintln!("flags:");
-    eprintln!("\t-r                                       recursive search");
+    eprintln!("  -r                                       recursive search");
 }
 
 fn bin_name() -> String {

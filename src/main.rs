@@ -7,7 +7,7 @@ mod suki;
 #[derive(PartialEq)]
 enum Flags {
     Debug,
-    Recursive
+    Recursive,
 }
 
 fn main() -> Result<(), String> {
@@ -25,7 +25,7 @@ fn main() -> Result<(), String> {
     let mut flags: Vec<Flags> = Vec::new();
 
     let mut current_arg = 2;
-    let filename: String; 
+    let filename: String;
     loop {
         match args.get(current_arg) {
             Some(s) => {
@@ -34,21 +34,21 @@ fn main() -> Result<(), String> {
                     flags.push(match s.as_ref() {
                         "--debug" | "-d" => Flags::Debug,
                         "--recursive" | "-r" => Flags::Recursive,
-                        a => return Err(format!("invalid flag {}", a))
+                        a => return Err(format!("invalid flag {}", a)),
                     });
-                   continue;
-                } 
+                    continue;
+                }
                 filename = s.to_string();
                 break;
             }
-            None => return Err(String::from("no filename supplied to tag"))
+            None => return Err(String::from("no filename supplied to tag")),
         }
     }
 
     match cmd.as_ref() {
         "t" | "tag" => tag(&filename, args.split_at(current_arg).1, &flags),
         "r" | "remove" => remove(&filename, args.split_at(current_arg).1, &flags),
-        "s" | "search" => Err(String::from("unimplemented cmd - search")),
+        "s" | "search" => search(args.split_at(current_arg - 1).1, &flags),
         "h" | "help" => {
             print_help();
             Ok(())
@@ -57,14 +57,12 @@ fn main() -> Result<(), String> {
             print_version();
             Ok(())
         }
-        s => Err(format!("unknown command {}", s))
+        s => Err(format!("unknown command {}", s)),
     }
-
 }
 
 fn tag(filename: &str, tags: &[String], flags: &[Flags]) -> Result<(), String> {
     let dir = curr_dir();
-    
     if flags.contains(&Flags::Debug) {
         eprintln!("file: {}, tags: {:?}", filename, tags);
     }
@@ -80,7 +78,7 @@ fn tag(filename: &str, tags: &[String], flags: &[Flags]) -> Result<(), String> {
                     found = true;
                     break;
                 }
-            } 
+            }
             if !found {
                 let mut new_tag = suki::Tag::new(t);
                 new_tag.files.push(String::from(filename));
@@ -95,7 +93,7 @@ fn tag(filename: &str, tags: &[String], flags: &[Flags]) -> Result<(), String> {
 fn remove(filename: &str, tags: &[String], flags: &[Flags]) -> Result<(), String> {
     let dir = curr_dir();
     if flags.contains(&Flags::Debug) {
-        println!("file: {}, tags: {:?}", filename, tags);
+        eprintln!("file: {}, tags: {:?}", filename, tags);
     }
     let mut file = suki::File::new(&dir)?;
 
@@ -106,11 +104,61 @@ fn remove(filename: &str, tags: &[String], flags: &[Flags]) -> Result<(), String
                     st.files.retain(|f| !f.eq(filename));
                     break;
                 }
-            } 
+            }
         }
     }
 
     file.serialize("contrib")
+}
+
+fn search(tags: &[String], flags: &[Flags]) -> Result<(), String> {
+    let dir = curr_dir();
+    if flags.contains(&Flags::Debug) {
+        eprintln!("tags: {:?}", tags);
+    }
+    let mut file = suki::File::new(&dir)?;
+
+    let mut working_set: Option<Vec<String>> = None;
+
+    for t in tags {
+        if flags.contains(&Flags::Debug) {
+            eprintln!("scanning for {}", t);
+        }
+        let mut found = false;
+        for st in &mut file.tags {
+            found = false;
+            if t.eq(&st.tag) {
+                found = true;
+                if working_set.is_none() {
+                    let mut ws = Vec::new();
+                    for f in &st.files {
+                        ws.push(String::from(f));
+                    }
+                    working_set = Some(ws);
+                } else {
+                    let mut ws = working_set.unwrap();
+                    ws.retain(|f| st.files.iter().any(|tf| tf.eq(f)));
+                    working_set = Some(ws);
+                }
+                break;
+            }
+        }
+        if !found {
+            working_set = None;
+            break;
+        }
+    }
+
+    if let Some(ws) = working_set {
+        for f in ws {
+            print!("{} ", f);
+        }
+        println!();
+        Ok(())
+    } else {
+        eprintln!("nothing found");
+        Ok(())
+    }
 }
 
 fn print_version() {

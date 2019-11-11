@@ -105,11 +105,9 @@ impl File {
             ));
         }
 
-        // At worse, we should have at least one tag left over that didn't get
-        // a chance to be pushed. We push it here with a force-unwrap.
-        // TODO: Fix this. It shouldn't force-unwrap, but for testing it's
-        // good enough as a panic will tell us enough.
-        file_buffer.tags.push(tag_buffer.unwrap());
+        if let Some(last_tag) = tag_buffer {
+            file_buffer.tags.push(last_tag);
+        }
         Ok(file_buffer)
     }
 }

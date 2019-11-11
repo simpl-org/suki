@@ -1,0 +1,24 @@
+image: archlinux
+packages:
+  - rustup
+  - rsync
+sources:
+  - https://git.sr.ht/~calmbit/suki
+secrets:
+  - a70ff356-9ae9-47fc-97dc-03b06cedf851
+environment:
+  artifact: calmbit@107.174.128.143
+tasks:
+  - setup: |
+      rustup install stable
+      rustup default stable
+      rustc -V
+  - build: |
+      cd suki
+      cargo build
+      cargo clippy --all -- -D warnings
+  - package: |
+      cd suki
+      sshopts="ssh -o StrictHostKeyChecking=no"
+      tar -cvf $(git rev-parse HEAD)-linux.tar.gz ./target/
+      rsync --rsh="$sshopts" -a $(git rev-parse HEAD)-linux.tar.gz $artifact:/home/calmbit/artifacts/
